@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>完形补文 · 真题演练（2013-2026）</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background-color: #f3f5f9;
+      padding: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-container {
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 1.6rem;
+      color: #1e293b;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .header p {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
+      padding: 20px 18px;
+      margin-bottom: 20px;
+      transition: all 0.2s;
+    }
+
+    .exam-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .exam-title span {
+      background: #3b82f6;
+      color: white;
+      font-size: 0.75rem;
+      padding: 2px 10px;
+      border-radius: 30px;
+      font-weight: 500;
+    }
+
+    .exam-title .translate-btn {
+      margin-left: auto;
+      background: #10b981;
+      color: white;
+      border: none;
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .exam-title .translate-btn:hover {
+      background: #059669;
+    }
+
+    .exam-title .translate-btn.active {
+      background: #f59e0b;
+    }
+
+    .exam-title .translate-btn.active:hover {
+      background: #d97706;
+    }
+
+    .passage {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #1e293b;
+    }
+
+    .passage p {
+      margin-bottom: 16px;
+      text-align: justify;
+    }
+
+    .sentence-block {
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .sentence-block:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .sentence-en {
+      text-align: justify;
+      margin-bottom: 6px;
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    .sentence-zh {
+      color: #475569;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      padding: 8px 12px;
+      border-left: 3px solid #10b981;
+      background: #f0fdf4;
+      border-radius: 6px;
+    }
+
+    .hint-word {
+      text-decoration: underline;
+      font-style: italic;
+      color: #475569;
+    }
+
+    .filled-answer {
+      color: #dc2626;
+      font-weight: 700;
+      background: #fef2f2;
+      padding: 0 4px;
+      border-radius: 4px;
+    }
+
+    .blank-input {
+      display: inline-block;
+      width: auto;
+      min-width: 80px;
+      max-width: 220px;
+      padding: 4px 10px;
+      margin: 0 3px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 500;
+      color: #2563eb;
+      background: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      text-align: center;
+      outline: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      vertical-align: middle;
+      field-sizing: content;
+    }
+
+    .blank-input::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
+      opacity: 0.8;
+    }
+
+    .blank-input:hover {
+      border-color: #3b82f6;
+      background: #e2e8f0;
+    }
+
+    .blank-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      background: #ffffff;
+    }
+
+    .blank-input.revealed {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e40af;
+      font-weight: 600;
+      cursor: pointer;
+      field-sizing: content;
+    }
+
+    .blank-input.revealed::placeholder {
+      color: #1e40af;
+      opacity: 1;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      background: white;
+      border: 1px solid #cbd5e1;
+      padding: 12px 24px;
+      border-radius: 40px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #1e293b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+      flex: 1;
+      max-width: 160px;
+      user-select: none;
+    }
+
+    .btn:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      pointer-events: none;
+      filter: grayscale(0.5);
+    }
+
+    .btn-reset {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+      max-width: 100px;
+    }
+
+    .btn-reset:hover {
+      background: #fee2e2;
+      border-color: #ef4444;
+    }
+
+    .page-indicator {
+      font-size: 0.95rem;
+      color: #475569;
+      background: #e2e8f0;
+      padding: 8px 18px;
+      border-radius: 40px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+
+    .modal-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 32px;
+      max-width: 500px;
+      width: 100%;
+      padding: 28px 24px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      position: relative;
+      transform: scale(0.96);
+      transition: transform 0.2s;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-header h3 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      line-height: 1;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0 8px;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover {
+      color: #1e293b;
+    }
+
+    .modal-answer {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #2563eb;
+      margin: 10px 0 16px;
+      letter-spacing: 0.5px;
+      word-break: break-word;
+    }
+
+    .modal-explanation {
+      background: #f8fafc;
+      padding: 18px;
+      border-radius: 20px;
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #1e293b;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 8px;
+      padding: 8px 0;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 16px 14px;
+        border-radius: 20px;
+      }
+
+      .passage {
+        font-size: 0.95rem;
+        line-height: 1.7;
+      }
+
+      .blank-input {
+        min-width: 60px;
+        max-width: 160px;
+        padding: 3px 8px;
+        font-size: 0.85rem;
+      }
+
+      .btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+      }
+
+      .btn-reset {
+        max-width: 80px;
+      }
+
+      .page-indicator {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+      }
+
+      .modal-content {
+        padding: 22px 18px;
+      }
+
+      .modal-answer {
+        font-size: 1.8rem;
+      }
+
+      .modal-explanation {
+        font-size: 0.95rem;
+        padding: 14px;
+      }
+
+      .exam-title .translate-btn {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="header">
+    <h1>📘 完形补文 · 真题演练</h1>
+    <p>点击输入框查看答案，点击已显示的答案查看详细解析</p>
+  </div>
+
+  <div id="quizCard" class="card">
+    <!-- 动态渲染试卷内容 -->
+  </div>
+
+  <div class="nav-buttons">
+    <button id="prevBtn" class="btn" disabled>← 上一页</button>
+    <button id="resetBtn" class="btn btn-reset">↺ 重置</button>
+    <span id="pageIndicator" class="page-indicator">1 / 14</span>
+    <button id="nextBtn" class="btn">下一页 →</button>
+  </div>
+  <div class="footer-note">基于2013-2026年自考英语(二)完形补文真题</div>
+</div>
+
+<!-- 弹窗 -->
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>💡 答案解析</h3>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-answer" id="modalAnswer">answer</div>
+    <div class="modal-explanation" id="modalExplanation">解析内容</div>
+  </div>
+</div>
+
+<!-- 数据文件（单独抽离） -->
+<script src="data.js"></script>
+
+<script>
+  (function() {
+    // 从 data.js 读取试卷数据
+    const exams = window.examsData || [];
+
+    if (!exams.length) {
+      document.getElementById('quizCard').innerHTML =
+        '<p style="text-align:center;color:#ef4444;padding:40px 0;">数据加载失败，请确认 data.js 文件存在且已正确挂载 window.examsData。</p>';
+      return;
+    }
+
+    let currentIndex = 0;
+    const totalExams = exams.length;
+    let translationVisible = false;
+
+    const quizCard = document.getElementById('quizCard');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalAnswer = document.getElementById('modalAnswer');
+    const modalExplanation = document.getElementById('modalExplanation');
+    const modalClose = document.getElementById('modalClose');
+
+    const supportsFieldSizing = CSS.supports('field-sizing', 'content');
+
+    function adjustInputWidth(input) {
+      if (supportsFieldSizing) return;
+      const span = document.createElement('span');
+      span.style.visibility = 'hidden';
+      span.style.position = 'absolute';
+      span.style.whiteSpace = 'nowrap';
+      span.style.font = window.getComputedStyle(input).font;
+      span.textContent = input.value || input.placeholder || '';
+      document.body.appendChild(span);
+      const width = span.getBoundingClientRect().width;
+      document.body.removeChild(span);
+      input.style.width = Math.max(80, Math.min(width + 30, 220)) + 'px';
+    }
+
+    function splitSentences(text) {
+      const sentences = [];
+      let current = '';
+      let depth = 0;
+      let i = 0;
+      while (i < text.length) {
+        const char = text[i];
+        if (char === '(') depth++;
+        if (char === ')') depth--;
+        current += char;
+        if (depth === 0 && (char === '.' || char === '?' || char === '!')) {
+          const next = text[i + 1];
+          if (next === undefined || next === ' ' || next === '"') {
+            sentences.push(current.trim());
+            current = '';
+          }
+        }
+        i++;
+      }
+      if (current.trim()) sentences.push(current.trim());
+      return sentences.filter(s => s.length > 0);
+    }
+
+    function renderNormal(exam) {
+      let html = `<div class="exam-title">📄 ${exam.title} <span>完形补文</span>
+        <button class="translate-btn" id="translateBtn">翻译全文</button>
+      </div>`;
+      html += `<div class="passage">`;
+
+      exam.passage.forEach(para => {
+        let processed = para.replace(/(\d+)\s*\(([^)]+)\)/g, (match, num, hint) => {
+          return `<input class="blank-input" data-blank="${num}" placeholder="${num}" readonly> (${hint})`;
+        });
+        html += `<p>${processed}</p>`;
+      });
+
+      html += `</div>`;
+      quizCard.innerHTML = html;
+
+      bindInputEvents(exam);
+      bindTranslateButton(exam);
+    }
+
+    function renderTranslation(exam) {
+      let html = `<div class="exam-title">📄 ${exam.title} <span>完形补文</span>
+        <button class="translate-btn active" id="translateBtn">隐藏翻译</button>
+      </div>`;
+      html += `<div class="passage">`;
+
+      let transIndex = 0;
+      exam.passage.forEach(para => {
+        let processed = para.replace(/(\d+)\s*\(([^)]+)\)/g, (match, num, hint) => {
+          return `<input class="blank-input" data-blank="${num}" placeholder="${num}" readonly> (${hint})`;
+        });
+
+        const sentences = splitSentences(processed);
+
+        sentences.forEach(sentence => {
+          let filledSentence = sentence.replace(/<input class="blank-input"[^>]*data-blank="(\d+)"[^>]*>(\s*\([^)]*\))?/g, (match, num) => {
+            const answerData = exam.blanks[num];
+            if (answerData) {
+              return `<span class="filled-answer">${answerData.answer}</span>`;
+            }
+            return match;
+          });
+          filledSentence = filledSentence.replace(/\s*\([^)]*\)/g, '');
+
+          const translation = exam.translations[transIndex] || '';
+
+          html += `<div class="sentence-block">`;
+          html += `<div class="sentence-en">${filledSentence}</div>`;
+          if (translation) {
+            html += `<div class="sentence-zh">${translation}</div>`;
+          }
+          html += `</div>`;
+
+          transIndex++;
+        });
+      });
+
+      html += `</div>`;
+      quizCard.innerHTML = html;
+
+      bindTranslateButton(exam);
+    }
+
+    function bindInputEvents(exam) {
+      document.querySelectorAll('.blank-input').forEach(input => {
+        adjustInputWidth(input);
+        input.addEventListener('click', function(e) {
+          const blankId = this.dataset.blank;
+          const answerData = exam.blanks[blankId];
+          if (!answerData) return;
+
+          if (this.classList.contains('revealed')) {
+            showModal(answerData.answer, answerData.explanation);
+            return;
+          }
+
+          this.classList.add('revealed');
+          this.value = answerData.answer;
+          this.placeholder = answerData.answer;
+          adjustInputWidth(this);
+        });
+      });
+    }
+
+    function bindTranslateButton(exam) {
+      const translateBtn = document.getElementById('translateBtn');
+      if (translateBtn) {
+        translateBtn.addEventListener('click', () => {
+          translationVisible = !translationVisible;
+          if (translationVisible) {
+            renderTranslation(exam);
+          } else {
+            renderNormal(exam);
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+    }
+
+    function renderExam(index) {
+      const exam = exams[index];
+      if (!exam) return;
+
+      if (translationVisible) {
+        renderTranslation(exam);
+      } else {
+        renderNormal(exam);
+      }
+
+      prevBtn.disabled = index === 0;
+      nextBtn.disabled = index === totalExams - 1;
+      pageIndicator.textContent = `${index + 1} / ${totalExams}`;
+    }
+
+    function showModal(answer, explanation) {
+      modalAnswer.textContent = answer;
+      modalExplanation.textContent = explanation;
+      modalOverlay.classList.add('active');
+    }
+
+    function hideModal() {
+      modalOverlay.classList.remove('active');
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderExam(currentIndex);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentIndex < totalExams - 1) {
+        currentIndex++;
+        renderExam(currentIndex);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      translationVisible = false;
+      renderExam(currentIndex);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    modalClose.addEventListener('click', hideModal);
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        hideModal();
+      }
+    });
+
+    renderExam(currentIndex);
+  })();
+</script>
+</body>
+</html>
