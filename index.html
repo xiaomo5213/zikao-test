@@ -68,6 +68,7 @@
       transition: all 0.2s;
     }
 
+    /* 已删除蓝色标签 */
     .exam-title {
       font-size: 1.1rem;
       font-weight: 600;
@@ -79,15 +80,6 @@
       padding-bottom: 12px;
       margin-bottom: 16px;
       flex-wrap: wrap;
-    }
-
-    .exam-title span {
-      background: #3b82f6;
-      color: white;
-      font-size: 0.7rem;
-      padding: 3px 10px;
-      border-radius: 30px;
-      font-weight: 500;
     }
 
     .exam-title .translate-btn {
@@ -161,14 +153,14 @@
       justify-content: center;
       vertical-align: middle;
       margin-left: 6px;
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
       border-radius: 50%;
       border: 1px solid #dbeafe;
       background: #eff6ff;
       color: #2563eb;
-      font-size: 0.95rem;
+      font-size: 1rem;
       cursor: pointer;
       transition: all 0.2s;
       user-select: none;
@@ -358,7 +350,6 @@
       flex: 1 1 100%;
     }
 
-    /* 弹窗遮罩 */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -452,7 +443,6 @@
       word-break: break-word;
     }
 
-    /* ========= 推广弹窗样式 ========= */
     .promo-overlay {
       position: fixed;
       top: 0;
@@ -667,11 +657,11 @@
       }
 
       .speak-btn {
-        width: 28px;
-        height: 28px;
-        min-width: 28px;
-        font-size: 0.85rem;
-        margin-left: 4px;
+        width: 30px;
+        height: 30px;
+        min-width: 30px;
+        font-size: 0.9rem;
+        margin-left: 5px;
       }
 
       .btn {
@@ -730,7 +720,6 @@
       }
     }
 
-    /* 超窄屏 */
     @media (max-width: 360px) {
       .exam-title .translate-btn {
         margin-left: 0;
@@ -758,7 +747,7 @@
   </div>
 
   <div id="quizCard" class="card">
-    <!-- 动态渲染试卷内容 -->
+    <!-- 动态渲染 -->
   </div>
 
   <div class="nav-buttons">
@@ -803,7 +792,6 @@
   </div>
 </div>
 
-<!-- 数据文件 -->
 <script src="data.js"></script>
 
 <script>
@@ -831,11 +819,149 @@
     const modalClose = document.getElementById('modalClose');
 
     const supportsFieldSizing = CSS.supports('field-sizing', 'content');
-    const speechSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    const speechSupported = typeof window.speechSynthesis !== 'undefined' && typeof window.SpeechSynthesisUtterance !== 'undefined';
+
+    // ========== 语音引擎预热（iOS/微信关键） ==========
+    // iOS 和部分微信版本要求语音播放必须在用户手势的"同步栈"内触发。
+    // 策略：在用户第一次触摸页面时，用一个极短的 utterance 预热引擎。
+    let speechPrimed = false;
+    function primeSpeechEngine() {
+      if (speechPrimed || !speechSupported) return;
+      try {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0;  // 完全静音
+        u.rate = 2;
+        u.lang = 'en-US';
+        window.speechSynthesis.speak(u);
+        speechPrimed = true;
+      } catch (e) {
+        // 忽略
+      }
+    }
+    // 全局首次触摸时预热
+    document.addEventListener('touchstart', primeSpeechEngine, { once: true, passive: true });
+    document.addEventListener('click', primeSpeechEngine, { once: true });
+
+    // 加载 voices（异步）
+    let cachedEnglishVoice = null;
+    function loadVoices() {
+      if (!speechSupported) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return;
+
+      // 优先美音，其次英音，再其次任何英语
+      cachedEnglishVoice =
+        voices.find(v => v.lang === 'en-US') ||
+        voices.find(v => v.lang === 'en_GB') ||
+        voices.find(v => v.lang === 'en-GB') ||
+        voices.find(v => v.lang && v.lang.toLowerCase().indexOf('en') === 0) ||
+        null;
+    }
+    if (speechSupported) {
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+      // 有些浏览器 voices 是异步慢加载，延迟再取一次
+      setTimeout(loadVoices, 500);
+      setTimeout(loadVoices, 1500);
+    }
+
+    // 清理 HTML 得到纯文本
+    function cleanTextForSpeech(html) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      let text = tmp.textContent || tmp.innerText || '';
+      text = text.replace(/\s+/g, ' ').trim();
+      return text;
+    }
+
+    // 拆分长句（>200 字符），避免某些浏览器截断
+    function splitLongTextForSpeech(text, maxLen) {
+      maxLen = maxLen || 200;
+      if (text.length <= maxLen) return [text];
+      const chunks = [];
+      // 优先按 . ? ! 拆分
+      const parts = text.split(/(?<=[.?!])\s+/);
+      let buf = '';
+      for (const p of parts) {
+        if ((buf + ' ' + p).trim().length > maxLen && buf) {
+          chunks.push(buf.trim());
+          buf = p;
+        } else {
+          buf = (buf + ' ' + p).trim();
+        }
+      }
+      if (buf) chunks.push(buf.trim());
+      // 如果某段还是太长，硬切
+      const finalChunks = [];
+      for (const c of chunks) {
+        if (c.length <= maxLen) {
+          finalChunks.push(c);
+        } else {
+          for (let i = 0; i < c.length; i += maxLen) {
+            finalChunks.push(c.slice(i, i + maxLen));
+          }
+        }
+      }
+      return finalChunks;
+    }
+
+    // 朗读句子
+    function speakSentence(text, buttonEl) {
+      if (!speechSupported) {
+        alert('您的浏览器不支持语音朗读，请使用 Chrome、Edge 或 Safari 浏览器。');
+        return;
+      }
+
+      // 停止当前正在播放
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+
+      // 移除其他按钮的播放状态
+      document.querySelectorAll('.speak-btn.speaking').forEach(btn => {
+        btn.classList.remove('speaking');
+      });
+
+      const chunks = splitLongTextForSpeech(text, 200);
+      let currentIndexInQueue = 0;
+
+      const speakNext = () => {
+        if (currentIndexInQueue >= chunks.length) {
+          if (buttonEl) buttonEl.classList.remove('speaking');
+          return;
+        }
+        const chunk = chunks[currentIndexInQueue];
+        const utterance = new SpeechSynthesisUtterance(chunk);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        if (cachedEnglishVoice) {
+          utterance.voice = cachedEnglishVoice;
+          utterance.lang = cachedEnglishVoice.lang;
+        }
+
+        utterance.onend = () => {
+          currentIndexInQueue++;
+          speakNext();
+        };
+        utterance.onerror = () => {
+          if (buttonEl) buttonEl.classList.remove('speaking');
+        };
+
+        try {
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {
+          if (buttonEl) buttonEl.classList.remove('speaking');
+        }
+      };
+
+      if (buttonEl) buttonEl.classList.add('speaking');
+      speakNext();
+    }
 
     // ========== 推广弹窗逻辑 ==========
     const PROMO_KEY = 'promo_closed_at';
-    const PROMO_INTERVAL = 48 * 60 * 60 * 1000; // 48小时（毫秒）
+    const PROMO_INTERVAL = 48 * 60 * 60 * 1000;
     const promoOverlay = document.getElementById('promoOverlay');
     const promoClose = document.getElementById('promoClose');
 
@@ -846,23 +972,15 @@
         const elapsed = Date.now() - parseInt(last, 10);
         return elapsed >= PROMO_INTERVAL;
       } catch (e) {
-        // localStorage 不可用（隐私模式等），直接允许弹出
         return true;
       }
     }
 
     function markPromoClosed() {
-      try {
-        localStorage.setItem(PROMO_KEY, Date.now().toString());
-      } catch (e) {
-        // 忽略
-      }
+      try { localStorage.setItem(PROMO_KEY, Date.now().toString()); } catch (e) {}
     }
 
-    function showPromo() {
-      promoOverlay.classList.add('active');
-    }
-
+    function showPromo() { promoOverlay.classList.add('active'); }
     function hidePromo() {
       promoOverlay.classList.remove('active');
       markPromoClosed();
@@ -870,79 +988,11 @@
 
     promoClose.addEventListener('click', hidePromo);
     promoOverlay.addEventListener('click', (e) => {
-      if (e.target === promoOverlay) {
-        hidePromo();
-      }
+      if (e.target === promoOverlay) hidePromo();
     });
 
-    // 首次访问时延迟 1.5 秒弹出（避免闪屏）
     if (isPromoAvailable()) {
       setTimeout(showPromo, 1500);
-    }
-
-    // ========== 语音合成 ==========
-    let voicesLoaded = false;
-    function loadVoices() {
-      if (!speechSupported) return;
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) voicesLoaded = true;
-    }
-    if (speechSupported) {
-      loadVoices();
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-
-    function pickEnglishVoice() {
-      if (!speechSupported) return null;
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices.length) return null;
-      let voice = voices.find(v => v.lang === 'en-US');
-      if (!voice) voice = voices.find(v => v.lang === 'en-GB');
-      if (!voice) voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'));
-      return voice || null;
-    }
-
-    function cleanTextForSpeech(html) {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-      let text = tmp.textContent || tmp.innerText || '';
-      text = text.replace(/\s+/g, ' ').trim();
-      return text;
-    }
-
-    function speakSentence(text, buttonEl) {
-      if (!speechSupported) {
-        alert('您的浏览器不支持语音朗读，请使用 Chrome、Edge 或 Safari 浏览器。');
-        return;
-      }
-
-      window.speechSynthesis.cancel();
-
-      document.querySelectorAll('.speak-btn.speaking').forEach(btn => {
-        btn.classList.remove('speaking');
-      });
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-
-      const voice = pickEnglishVoice();
-      if (voice) {
-        utterance.voice = voice;
-        utterance.lang = voice.lang;
-      }
-
-      if (buttonEl) {
-        buttonEl.classList.add('speaking');
-        utterance.onend = () => buttonEl.classList.remove('speaking');
-        utterance.onerror = () => buttonEl.classList.remove('speaking');
-      }
-
-      setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
-      }, 50);
     }
 
     // ========== 渲染逻辑 ==========
@@ -984,7 +1034,7 @@
     }
 
     function renderNormal(exam) {
-      let html = `<div class="exam-title">📄 ${exam.title} <span>完形补文</span>
+      let html = `<div class="exam-title">📄 ${exam.title}
         <button class="translate-btn" id="translateBtn">🔊 翻译全文</button>
       </div>`;
       html += `<div class="passage">`;
@@ -1004,7 +1054,7 @@
     }
 
     function renderTranslation(exam) {
-      let html = `<div class="exam-title">📄 ${exam.title} <span>完形补文</span>
+      let html = `<div class="exam-title">📄 ${exam.title}
         <button class="translate-btn active" id="translateBtn">📖 隐藏翻译</button>
       </div>`;
       html += `<div class="passage">`;
@@ -1059,6 +1109,7 @@
         if (!speechSupported) btn.classList.add('unsupported');
         btn.addEventListener('click', function(e) {
           e.stopPropagation();
+          e.preventDefault();
           const text = this.getAttribute('data-speak') || '';
           if (!text) return;
           speakSentence(text, this);
@@ -1091,7 +1142,9 @@
       const translateBtn = document.getElementById('translateBtn');
       if (translateBtn) {
         translateBtn.addEventListener('click', () => {
-          if (speechSupported) window.speechSynthesis.cancel();
+          if (speechSupported) {
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+          }
           translationVisible = !translationVisible;
           if (translationVisible) {
             renderTranslation(exam);
@@ -1130,7 +1183,7 @@
 
     prevBtn.addEventListener('click', () => {
       if (currentIndex > 0) {
-        if (speechSupported) window.speechSynthesis.cancel();
+        if (speechSupported) { try { window.speechSynthesis.cancel(); } catch(e){} }
         currentIndex--;
         renderExam(currentIndex);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1139,7 +1192,7 @@
 
     nextBtn.addEventListener('click', () => {
       if (currentIndex < totalExams - 1) {
-        if (speechSupported) window.speechSynthesis.cancel();
+        if (speechSupported) { try { window.speechSynthesis.cancel(); } catch(e){} }
         currentIndex++;
         renderExam(currentIndex);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1147,7 +1200,7 @@
     });
 
     resetBtn.addEventListener('click', () => {
-      if (speechSupported) window.speechSynthesis.cancel();
+      if (speechSupported) { try { window.speechSynthesis.cancel(); } catch(e){} }
       translationVisible = false;
       renderExam(currentIndex);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1160,7 +1213,7 @@
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && speechSupported) {
-        window.speechSynthesis.cancel();
+        try { window.speechSynthesis.cancel(); } catch (e) {}
       }
     });
 
